@@ -4,33 +4,7 @@ import { StyleSheet, Text, View, SafeAreaView, ScrollView, } from "react-native"
 import { ListItem, Avatar } from "react-native-elements";
 
 
-const list = [
-  {
-    name: "Amy Farha",
-    avatar_url:
-      "https://images.theconversation.com/files/304957/original/file-20191203-66986-im7o5.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=1200&h=1200.0&fit=crop",
-    subtitle: "Vice President",
-  },
-  {
-    name: "Chris Jackson",
-    avatar_url:
-      "https://www.drshvetz.com/wp-content/uploads/2016/09/doctor-1.jpg",
-    subtitle: "Vice Chairman",
-  },
-  {
-    name: "Amy Farha",
-    avatar_url:
-      "https://images.theconversation.com/files/304957/original/file-20191203-66986-im7o5.jpg?ixlib=rb-1.1.0&q=45&auto=format&w=1200&h=1200.0&fit=crop",
-    subtitle: "Vice President",
-  },
-  {
-    name: "Chris Jackson",
-    avatar_url:
-      "https://www.drshvetz.com/wp-content/uploads/2016/09/doctor-1.jpg",
-    subtitle: "Vice Chairman",
-  },
 
-];
 
 export default function doctorList({ navigation }) {
   const [doctorData, setdoctorData] = useState([]);

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import "react-native-gesture-handler";
 import {
   StyleSheet,
@@ -58,10 +58,68 @@ export default function doctorDetails({ route, navigation }) {
   const [docAbsent, setDocAbsent] = useState(true);
   const [expandedDay, setExpandedDay] = useState(false);
   const [expandedDate, setExpandedDate] = useState(false);
+  const [sessionDetails, setsessionDetails] = useState([]);
+  const [days, setDays] = useState([]);
+  const [selecedSession, setselectedSession] = useState(new Map());
+
+
+
+  /* Get data from the API*/
+
+  useEffect(() => {
+    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/5/dispensary/5?displayDays=3")
+      .then((response) => response.json())
+      .then((json) => {
+        let map = new Map();
+        let tempKeys = [];
+        json.forEach((resource) => {
+          let sessions = [];
+          if (map.get(resource.day) !== undefined) {
+            let tmpAppoinment = map.get(resource.day);
+            console.log('tmpppppppppppppppppppppp')
+            console.log(map);
+            let session = {
+              startTime: resource.sessionStartTime,
+              macCount: resource.maxCount,
+            };
+            tmpAppoinment.sessions.push(session);
+            map.set(resource.day, tmpAppoinment);
+          } else {
+            let session = {
+              startTime: resource.sessionStartTime,
+              macCount: resource.maxCount,
+            };
+            sessions.push(session);
+            let appointment = {
+              date: resource.date,
+              day: resource.day,
+              sessions: sessions,
+            };
+            map.set(resource.day, appointment);
+          }
+        });
+
+        map.forEach(function (value, key) {
+          tempKeys.push(key);
+          console.log(key + " = " + JSON.stringify(value));
+        })
+        setDays(tempKeys);
+        setselectedSession(map);
+
+
+      })
+      .catch((error) => console.error(error))
+      .finally(() => setLoading(false));
+
+  }, []);
+
+
+  /* End - Get data from the API*/
+
 
   /*  Set Expanded Function */
 
-  const updateExpandedList = (value) => {
+  const updateExpandedList = (day,value) => {
     if (expandedItems.indexOf(value) !== -1) {
       // setExpandedItems([...expandedItems].filter(item => item !== value))
       setExpandedItems([]);
@@ -69,6 +127,15 @@ export default function doctorDetails({ route, navigation }) {
       // let exList = [...expandedItems]
       // exList.push(value)
       setExpandedItems([value]);
+     
+      let tmpSessions = selecedSession.get(day);
+      
+      setsessionDetails(tmpSessions.sessions);
+      //alert(JSON.stringify(tmpSessions.sessions))
+      selecedSession.forEach(function (value, key) {
+        
+        alert(key + " = " + JSON.stringify(value));
+      })
     }
   };
 
@@ -154,20 +221,20 @@ export default function doctorDetails({ route, navigation }) {
 
         <ScrollView style={styles.scrollView}>
           <View style={styles.daysSection}>
-            {scheduelDetails.map((l, i) => (
+            {days.map((l, i) => (
               <ListItem.Accordion
                 key={"scheduelDetails" + i}
                 content={
                   <>
                     <Icon
-                      name="filter-1"
+                      name="event"
                       color="#1896c5"
                       size={20}
                       style={{ marginRight: 15 }}
                     />
                     <ListItem.Content>
-                      <ListItem.Title style={{ color: "#1896c5" }}>
-                        {l.day}
+                      <ListItem.Title style={{ color: "#1896c5", textTransform:'capitalize' }}>
+                        {l}
                       </ListItem.Title>
                     </ListItem.Content>
                   </>
@@ -176,7 +243,7 @@ export default function doctorDetails({ route, navigation }) {
                 // isExpanded={expandedItems===i}
                 onPress={() => {
                   //setSexpanded(!sexpanded);
-                  updateExpandedList(i);
+                  updateExpandedList(l,i);
                 }}
               >
                 {sessionDetails.map((sd, j) => (
@@ -205,24 +272,26 @@ export default function doctorDetails({ route, navigation }) {
                     <View style={styles.sessionDetailsSection}>
                       <View style={styles.singleRow}>
                         <Text style={styles.timeTitle}>Start Time</Text>
-                        <Text style={styles.timeValue}>20.50</Text>
+                        <Text style={styles.timeValue}>{sd.startTime}</Text>
                         <Icon
                           name="access-alarms"
                           raised
                           size={18}
                           color="#1896c5"
                           onPress={showTimepicker}
+                          disabled={docAbsent ? false : true}
                         />
                       </View>
                       <View style={styles.singleRow}>
                         <Text style={styles.timeTitle}>Number of bookings</Text>
-                        <Text style={styles.timeValue}>20.50</Text>
+                        <Text style={styles.timeValue}>{sd.macCount}</Text>
                         <Icon
                           name="access-alarms"
                           raised
                           size={18}
                           color="#1896c5"
                           onPress={showTimepicker}
+                          disabled={docAbsent ? false : true}
                         />
                       </View>
                     </View>
@@ -314,7 +383,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
   },
   pageSubHeader: {
-    fontSize: 18,
+    fontSize: 16,
     marginVertical: 15,
   },
   scheduelHeader: {
