@@ -7,6 +7,8 @@ import {
   ScrollView,
   Dimensions,
   Alert,
+  Image,
+  Animated
 } from "react-native";
 import {
   ListItem,
@@ -52,50 +54,63 @@ const sessionDetails = [
 const windowWidth = Dimensions.get("window").width;
 export default function doctorDetails({ route, navigation }) {
   const { doctorName, doctorSubjet, doctorImage } = route.params;
+  const [isLoading, setisLoading] = useState(true);
   const [sexpanded, setSexpanded] = useState(false);
   const [expandedItems, setExpandedItems] = useState([]);
+  const [toggleON, settoggleON] = useState([]);
   const [deactivatedItems, setDeactivatedItems] = useState([]);
   const [docAbsent, setDocAbsent] = useState(true);
   const [expandedDay, setExpandedDay] = useState(false);
   const [expandedDate, setExpandedDate] = useState(false);
   const [sessionDetails, setsessionDetails] = useState([]);
+  const [activeSessions, setactiveSession] = useState([]);
   const [days, setDays] = useState([]);
   const [selecedSession, setselectedSession] = useState(new Map());
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
 
 
   /* Get data from the API*/
 
   useEffect(() => {
-    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/5/dispensary/5?displayDays=3")
+    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/schedule/5")
       .then((response) => response.json())
       .then((json) => {
         let map = new Map();
         let tempKeys = [];
+        let tempActiveSessions = [];
         json.forEach((resource) => {
           let sessions = [];
-          if (map.get(resource.day) !== undefined) {
-            let tmpAppoinment = map.get(resource.day);
+          if (resource.status === 'ACTIVE') {
+            tempActiveSessions.push(resource.id);
+          }
+          if (map.get(resource.dayOfWeek) !== undefined) {
+            let tmpAppoinment = map.get(resource.dayOfWeek);
             console.log('tmpppppppppppppppppppppp')
-            console.log(map);
+            console.log(resource.id);
             let session = {
-              startTime: resource.sessionStartTime,
+              startTime: resource.sessionStart,
               macCount: resource.maxCount,
+              ID: resource.id,
+              status: resource.status,
             };
             tmpAppoinment.sessions.push(session);
-            map.set(resource.day, tmpAppoinment);
+            map.set(resource.dayOfWeek, tmpAppoinment);
           } else {
             let session = {
-              startTime: resource.sessionStartTime,
+              startTime: resource.sessionStart,
               macCount: resource.maxCount,
+              ID: resource.id,
+              status: resource.status,
+
             };
             sessions.push(session);
             let appointment = {
               date: resource.date,
-              day: resource.day,
+              day: resource.dayOfWeek,
               sessions: sessions,
             };
-            map.set(resource.day, appointment);
+            map.set(resource.dayOfWeek, appointment);
           }
         });
 
@@ -105,11 +120,16 @@ export default function doctorDetails({ route, navigation }) {
         })
         setDays(tempKeys);
         setselectedSession(map);
+        setactiveSession(tempActiveSessions);
 
 
       })
       .catch((error) => console.error(error))
-      .finally(() => setLoading(false));
+      .finally(() => setisLoading(false));
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 2000
+    }).start();
 
   }, []);
 
@@ -119,7 +139,7 @@ export default function doctorDetails({ route, navigation }) {
 
   /*  Set Expanded Function */
 
-  const updateExpandedList = (day,value) => {
+  const updateExpandedList = (day, value) => {
     if (expandedItems.indexOf(value) !== -1) {
       // setExpandedItems([...expandedItems].filter(item => item !== value))
       setExpandedItems([]);
@@ -127,14 +147,14 @@ export default function doctorDetails({ route, navigation }) {
       // let exList = [...expandedItems]
       // exList.push(value)
       setExpandedItems([value]);
-     
+
       let tmpSessions = selecedSession.get(day);
-      
+
       setsessionDetails(tmpSessions.sessions);
       //alert(JSON.stringify(tmpSessions.sessions))
       selecedSession.forEach(function (value, key) {
-        
-        alert(key + " = " + JSON.stringify(value));
+
+        //alert(key + " = " + JSON.stringify(value));
       })
     }
   };
@@ -143,17 +163,17 @@ export default function doctorDetails({ route, navigation }) {
 
   /*Alert*/
 
-  const createTwoButtonAlert = () =>
+  const createTwoButtonAlert = (sesID) =>
     Alert.alert(
       "Are you sure you want to do this ?",
-      "If you press 'OK' this session will be deactivated from the doctor's scheduel.",
+      docAbsent ? "If you press 'YES' this session will be deactivated." : "If you press 'YES' this session will be activated.",
       [
         {
           text: "Cancel",
           onPress: () => console.log("Cancel Pressed"),
           style: "cancel",
         },
-        { text: "Yes", onPress: toggleSwitch },
+        { text: "Yes", onPress: () => { toggleSwitch(sesID) } },
       ]
     );
 
@@ -193,7 +213,29 @@ export default function doctorDetails({ route, navigation }) {
     setVisible(!visible);
   };
 
-  const toggleSwitch = () => setDocAbsent((docAbsent) => !docAbsent);
+  const toggleSwitch = (switchID) => {
+    // // setDocAbsent((docAbsent) => !docAbsent)
+    // if (activeSessions.indexOf(switchID) !== -1) {
+    //   settoggleON([...toggleON].filter(item => item == switchID))
+    //   console.log(toggleON);
+    //   console.log('bbbdoooooooooooooooooooo')
+
+    //   //settoggleON([]);
+    // } else {  
+    //   //settoggleON([switchID]);
+    //   //let exList = [...toggleON]
+    //   toggleON.push(switchID);
+    //   console.log(toggleON);
+    // }
+
+    if (activeSessions.indexOf(switchID) == -1) {
+      setactiveSession(activeSessions.push(switchID));
+      
+    }
+    else { setactiveSession(activeSessions.filter(item => item !== switchID)); }
+
+
+  };
 
   return (
     <>
@@ -220,97 +262,115 @@ export default function doctorDetails({ route, navigation }) {
         </View>
 
         <ScrollView style={styles.scrollView}>
-          <View style={styles.daysSection}>
-            {days.map((l, i) => (
-              <ListItem.Accordion
-                key={"scheduelDetails" + i}
-                content={
-                  <>
-                    <Icon
-                      name="event"
-                      color="#1896c5"
-                      size={20}
-                      style={{ marginRight: 15 }}
-                    />
-                    <ListItem.Content>
-                      <ListItem.Title style={{ color: "#1896c5", textTransform:'capitalize' }}>
-                        {l}
-                      </ListItem.Title>
-                    </ListItem.Content>
-                  </>
-                }
-                isExpanded={expandedItems.indexOf(i) !== -1}
-                // isExpanded={expandedItems===i}
-                onPress={() => {
-                  //setSexpanded(!sexpanded);
-                  updateExpandedList(l,i);
-                }}
-              >
-                {sessionDetails.map((sd, j) => (
-                  <View
-                    key={"sessionKey" + j}
-                    style={[
-                      docAbsent ? styles.sessionViewPr : styles.sessionViewAb,
-                      expandedItems.indexOf(i) !== -1
-                        ? {}
-                        : { display: "none" },
-                    ]}
-                  >
-                    <View style={styles.switchAndHeading}>
-                      <Text style={styles.subHeadingSubView}>
-                        Session {sd.sessionID}
-                      </Text>
-                      <Switch
-                        color="#61c085"
-                        value={docAbsent}
-                        onValueChange={createTwoButtonAlert}
-                      />
-                    </View>
-                    <Divider
-                      style={{ backgroundColor: "#a4a4a4", marginTop: 10 }}
-                    />
-                    <View style={styles.sessionDetailsSection}>
-                      <View style={styles.singleRow}>
-                        <Text style={styles.timeTitle}>Start Time</Text>
-                        <Text style={styles.timeValue}>{sd.startTime}</Text>
-                        <Icon
-                          name="access-alarms"
-                          raised
-                          size={18}
-                          color="#1896c5"
-                          onPress={showTimepicker}
-                          disabled={docAbsent ? false : true}
-                        />
-                      </View>
-                      <View style={styles.singleRow}>
-                        <Text style={styles.timeTitle}>Number of bookings</Text>
-                        <Text style={styles.timeValue}>{sd.macCount}</Text>
-                        <Icon
-                          name="access-alarms"
-                          raised
-                          size={18}
-                          color="#1896c5"
-                          onPress={showTimepicker}
-                          disabled={docAbsent ? false : true}
-                        />
-                      </View>
-                    </View>
+          {isLoading ? (
+            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+              <Image
+                source={require('../../../assets/loading_gif.gif')}
+              /></View>
 
-                    {show && (
-                      <DateTimePicker
-                        testID="dateTimePicker"
-                        value={date}
-                        mode={mode}
-                        is24Hour={true}
-                        display="default"
-                        onChange={onChange}
+          ) : (
+
+
+            <Animated.View style={[styles.daysSection, { opacity: fadeAnim }]}>
+              {days.map((l, i) => (
+                <ListItem.Accordion
+                  key={"scheduelDetails" + i}
+                  content={
+                    <>
+                      <Icon
+                        name="event"
+                        color="#1896c5"
+                        size={20}
+                        style={{ marginRight: 15 }}
                       />
-                    )}
-                  </View>
-                ))}
-              </ListItem.Accordion>
-            ))}
-          </View>
+                      <ListItem.Content>
+                        <ListItem.Title style={{ color: "#1896c5", textTransform: 'capitalize' }}>
+                          {l}
+                        </ListItem.Title>
+                      </ListItem.Content>
+                    </>
+                  }
+                  isExpanded={expandedItems.indexOf(i) !== -1}
+                  // isExpanded={expandedItems===i}
+                  onPress={() => {
+                    //setSexpanded(!sexpanded);
+                    updateExpandedList(l, i);
+                  }}
+                >
+                  {sessionDetails.map((sd, j) => (
+                    <View
+                      key={"sessionKey" + j}
+                      style={[
+                        toggleON.indexOf(sd.ID) == -1 ? styles.sessionViewPr : styles.sessionViewAb,
+                        expandedItems.indexOf(i) !== -1
+                          ? {}
+                          : { display: "none" },
+                      ]}
+                    >
+                      <View style={styles.switchAndHeading}>
+                        <Text style={styles.subHeadingSubView}>
+                          Session {sd.ID}
+
+                        </Text>
+                        <Text>{Array.isArray(activeSessions)}</Text>
+                        <Switch
+                          color="#61c085"
+                          //value={toggleON.includes(sd.ID)}
+                          value={activeSessions.indexOf(sd.ID) === undefined || activeSessions.indexOf(sd.ID) !== -1}
+                          onValueChange={() => {
+                            createTwoButtonAlert(sd.ID);
+                          }}
+                        />
+                      </View>
+                      <Divider
+                        style={{ backgroundColor: "#a4a4a4", marginTop: 10 }}
+                      />
+                      <View style={styles.sessionDetailsSection}>
+                        <View style={styles.singleRow}>
+                          <Text style={styles.timeTitle}>Start Time</Text>
+                          <Text style={styles.timeValue}>{sd.startTime}</Text>
+                          <Icon
+                            name="access-alarms"
+                            raised
+                            size={18}
+                            color="#1896c5"
+                            onPress={showTimepicker}
+                            disabled={toggleON.indexOf(sd.ID) !== -1}
+                          />
+                        </View>
+                        <View style={styles.singleRow}>
+                          <Text style={styles.timeTitle}>Number of bookings</Text>
+                          <Text style={styles.timeValue}>{sd.macCount}</Text>
+                          <Icon
+                            name="access-alarms"
+                            raised
+                            size={18}
+                            color="#1896c5"
+                            onPress={showTimepicker}
+                            disabled={toggleON.indexOf(sd.ID) !== -1}
+                          />
+                        </View>
+                      </View>
+
+                      {show && (
+                        <DateTimePicker
+                          testID="dateTimePicker"
+                          value={date}
+                          mode={mode}
+                          is24Hour={true}
+                          display="default"
+                          onChange={onChange}
+                        />
+                      )}
+                    </View>
+                  ))}
+                </ListItem.Accordion>
+              ))}
+            </Animated.View>
+          )}
+
+
+
         </ScrollView>
         <Button
           // icon={<Icon name="restore-page" size={15} color="white" />}

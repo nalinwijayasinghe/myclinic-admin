@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import "react-native-gesture-handler";
-import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert } from "react-native";
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, Image } from "react-native";
 import { ListItem, Avatar, Overlay, Button, Icon, SearchBar, CheckBox } from "react-native-elements";
 const windowWidth = Dimensions.get("window").width;
 
@@ -79,14 +79,19 @@ export default function bookings({ navigation }) {
   /* End - Get data from the API*/
 
   return (
+    isLoading ? (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Image
+      style={styles.tinyLogo}
+      source={require('../../../assets/loading_gif.gif')}
+    /></View>
+
+    ) : (
     <SafeAreaView>
       <ScrollView style={styles.scrollView}>
         <View style={styles.container}>
 
-          {isLoading ? (
-            <Text>Loading...</Text>
-          ) : (
-            <>
+          
+            
               <View style={styles.searchArea}>
               {checkedValue === 'first' ? (<View style={styles.searchBoxRef}>
                   <SearchBar
@@ -156,8 +161,8 @@ export default function bookings({ navigation }) {
                   </ListItem>
                 </TouchableOpacity>
 
-              ))}
-            </>
+              )
+            
           )}
 
           <Overlay overlayStyle={styles.overLayStyles} isVisible={visible} onBackdropPress={toggleOverlay}>
@@ -210,6 +215,7 @@ export default function bookings({ navigation }) {
         </View>
       </ScrollView>
     </SafeAreaView>
+    )
   );
 }
 

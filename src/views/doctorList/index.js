@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from "react";
 import "react-native-gesture-handler";
-import { StyleSheet, Text, View, SafeAreaView, ScrollView, } from "react-native";
+import { StyleSheet, Text, View, SafeAreaView, ScrollView, Image } from "react-native";
 import { ListItem, Avatar } from "react-native-elements";
+import { LoadingImage } from '../../../assets/loading_gif.gif';
 
 
 
 
 export default function doctorList({ navigation }) {
   const [doctorData, setdoctorData] = useState([]);
-  const [isLoading, setLoading] = useState(false);
+  const [isLoading, setLoading] = useState(true);
   /* Get data from the API*/
 
   useEffect(() => {
@@ -24,14 +25,16 @@ export default function doctorList({ navigation }) {
   /* End - Get data from the API*/
 
   return (
+    isLoading ? (
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <Image
+          source={require('../../../assets/loading_gif.gif')}
+        /></View>
 
-    <SafeAreaView>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
-
-          {isLoading ? (
-            <Text>Loading...</Text>
-          ) : (
+    ) : (
+      <SafeAreaView>
+        <ScrollView style={styles.scrollView}>
+          <View style={styles.container}>
             <View>
               {doctorData.map((l, i) => (
                 <ListItem
@@ -56,19 +59,19 @@ export default function doctorList({ navigation }) {
                 </ListItem>
               ))}
             </View>
-          )}
 
 
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+
+          </View>
+        </ScrollView>
+      </SafeAreaView>)
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+    //backgroundColor: "#fff",
     // alignItems: "center",
     // justifyContent: "center",
   },
