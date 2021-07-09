@@ -7,6 +7,7 @@ import { StyleSheet, Text, View } from "react-native";
 import DoctorList from "./src/views/doctorList";
 import Bookings from "./src/views/bookings";
 import DoctorDetails from "./src/views/doctorDetails";
+import AdvanceSearch from './src/views/advaceSearch';
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -100,6 +101,11 @@ export default function App() {
         name="doctorDetails"
         component={DoctorDetails}
         options={{ title: "Details" }}
+      />
+      <Stack.Screen
+        name="advanceSearch"
+        component={AdvanceSearch}
+        options={{ title: "Advance Search" }}
       />
       <Stack.Screen
         name="Bookings"

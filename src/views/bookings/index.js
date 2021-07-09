@@ -1,23 +1,13 @@
 import React, { useState, useEffect } from "react";
 import "react-native-gesture-handler";
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Alert, Image } from "react-native";
-import { ListItem, Avatar, Overlay, Button, Icon, SearchBar, CheckBox } from "react-native-elements";
+import { ListItem, Avatar, Overlay, Button, Icon, SearchBar, CheckBox, FAB, Input } from "react-native-elements";
 const windowWidth = Dimensions.get("window").width;
+const windowHeight = Dimensions.get("window").height;
 
 
 export default function bookings({ navigation }) {
 
-  const list = [
-    {
-      title: 'Appointments',
-      subtitle: 'av-timer'
-    },
-    {
-      title: 'Trips',
-      subtitle: 'flight-takeoff'
-    },
-
-  ]
 
   const [data, setData] = useState([]);
   const [bookingDetails, setbookingDetails] = useState({
@@ -27,11 +17,26 @@ export default function bookings({ navigation }) {
     doctor: "",
   })
   const [isLoading, setLoading] = useState(true);
+  const [isLoadingDoctors, setLoadingDoctors] = useState(true);
+  const [isLoadingSessions, setLoadingSessions] = useState(true);
 
   const [visible, setVisible] = useState(false);
+  const [docListVisible, setdocListVisible] = useState(false);
+  const [sessionListVisible, setsessionListVisible] = useState(false);
+  const [reportVisible, setrepoartVisible] = useState(false);
   const [search, setSearch] = useState('');
   const [checked, setChecked] = useState(true);
-  const [checkedValue, setcheckedValue] = useState('first')
+  const [checkedValue, setcheckedValue] = useState('first');
+  const [doctorList, setdoctorList] = useState([]);
+  const [sessionList, setsessionList] = useState([]);
+  const [refNumber, setrefNumber] = useState('');
+  const [phoneNumber, setphoneNumber] = useState();
+  const [selectedDoctor, setselectedDoctor] = useState(
+    {
+      docName: "Select a doctor",
+      docID: '',
+    }
+  )
 
   const checkStatus = () => {
     setChecked(!checked)
@@ -44,6 +49,50 @@ export default function bookings({ navigation }) {
   const toggleOverlay = () => {
     setVisible(!visible);
   };
+
+  /* Get Doctors from the API*/
+
+  useEffect(() => {
+    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/doctor-dispensary?dispensaryId=5")
+      .then((response) => response.json())
+      .then((json) => {
+        setdoctorList(json)
+        if (json.length === 1) {
+          fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${json[0].doctor.doctorId}/dispensary/5?displayDays=1`)
+            .then((response) => response.json())
+            .then((json) => setsessionList(json))
+            .catch((error) => console.error(error))
+            .finally(() => setLoadingSessions(false));
+          console.log("+++++++++++++++++Sessionsssssssss++++++++++++++++++++++++");
+          console.log(sessionList);
+        }
+        else {
+          fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${selectedDoctor.docID}/dispensary/5?displayDays=1`)
+            .then((response) => response.json())
+            .then((json) => setsessionList(json))
+            .catch((error) => console.error(error))
+            .finally(() => setLoadingSessions(false));
+          console.log("+++++++++++++++++Sessionsssssssss++++++++++++++++++++++++");
+          console.log(sessionList);
+        }
+      })
+      .catch((error) => console.error(error))
+      .finally(() => setLoadingDoctors(false));
+    console.log("+++++++++++++++++++++++++++++++++++++++++");
+    console.log(doctorList);
+  }, []);
+
+  /* End - Get Doctors from the API*/
+
+  const toggleOverlayDoc = () => {
+    setdocListVisible(!docListVisible);
+
+  };
+  const toggleOverlaySes = () => {
+    setsessionListVisible(!sessionListVisible);
+  };
+
+
 
   /*Alert*/
 
@@ -81,35 +130,36 @@ export default function bookings({ navigation }) {
   return (
     isLoading ? (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Image
-      style={styles.tinyLogo}
-      source={require('../../../assets/loading_gif.gif')}
-    /></View>
+        style={styles.tinyLogo}
+        source={require('../../../assets/loading_gif.gif')}
+      /></View>
 
     ) : (
-    <SafeAreaView>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.container}>
+      <View style={{ flex: 1, backgroundColor: '#fff' }}>
+        <SafeAreaView>
+          <ScrollView style={styles.scrollView}>
+            <View style={styles.container}>
 
-          
-            
-              <View style={styles.searchArea}>
-              {checkedValue === 'first' ? (<View style={styles.searchBoxRef}>
+
+
+              {/* <View style={styles.searchArea}>
+                {checkedValue === 'first' ? (<View style={styles.searchBoxRef}>
                   <SearchBar
                     placeholder="Search by reference number..."
                     onChangeText={updateSearch}
                     value={search}
                     lightTheme
-                    inputContainerStyle={{backgroundColor:'#fff'}}
-                    containerStyle={{backgroundColor:'#ededed'}}
-                    
+                    inputContainerStyle={{ backgroundColor: '#fff' }}
+                    containerStyle={{ backgroundColor: '#ededed' }}
+
                   />
                 </View>) : (<View style={styles.searchBoxbooking}>
                   <SearchBar
-                    placeholder="Search by booking number..."
+                    placeholder="Search by mobile number..."
                     onChangeText={updateSearch}
                     value={search}
                     lightTheme
-                    inputContainerStyle={{backgroundColor:'#fff'}}
+                    inputContainerStyle={{ backgroundColor: '#fff' }}
 
                   />
                 </View>)}
@@ -121,21 +171,98 @@ export default function bookings({ navigation }) {
                     uncheckedIcon='circle-o'
                     checked={checkedValue === 'first' ? checked : null}
                     onPress={() => setcheckedValue('first')}
-                    containerStyle ={{backgroundColor: 'transparent', borderWidth:0}}
+                    containerStyle={{ backgroundColor: 'transparent', borderWidth: 0 }}
                   />
                   <CheckBox
                     center
-                    title='Booking Number'
+                    title='Mobile Number'
                     checkedIcon='dot-circle-o'
                     uncheckedIcon='circle-o'
                     checked={checkedValue === 'second' ? checked : null}
                     onPress={() => setcheckedValue('second')}
-                    containerStyle ={{backgroundColor: 'transparent', borderWidth:0}}
+                    containerStyle={{ backgroundColor: 'transparent', borderWidth: 0 }}
                   />
                 </View>
 
-                
 
+
+              </View> */}
+
+              <View style={styles.searchForm}>
+                {doctorList.length > 1 ? (
+                  <TouchableOpacity onPress={toggleOverlayDoc}>
+                    <View style={styles.singleSearchRow}>
+                      <Icon name='user-md' type='font-awesome' style={{ marginRight: 20 }} />
+                      <Text style={styles.searchDetail}>{selectedDoctor.docName}</Text>
+                    </View>
+                  </TouchableOpacity>
+                ) : (
+                  isLoadingDoctors ? (
+                    <View style={styles.singleSearchRow}>
+                      <Icon name='user-md' type='font-awesome' style={{ marginRight: 20 }} />
+                      <Text style={styles.searchDetail}>Loading...</Text>
+                    </View>
+                  ) : (
+                    <View style={styles.singleSearchRow}>
+                      <Icon name='user-md' type='font-awesome' style={{ marginRight: 20 }} />
+                      <Text style={styles.searchDetail}>{doctorList[0].doctor.name}</Text>
+                    </View>)
+                )}
+
+                {sessionList.length > 1 ? (
+                  <TouchableOpacity onPress={toggleOverlaySes}>
+                    <View style={styles.singleSearchRow}>
+                      <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
+                      <Text style={styles.searchDetail}>Select a session</Text>
+                    </View>
+                  </TouchableOpacity>) : (
+
+                  <View style={styles.singleSearchRow}>
+                    <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
+                    {isLoadingSessions ? (<Text style={styles.searchDetail}>Loading...</Text>) : (<Text style={styles.searchDetail}>{sessionList[0].id}</Text>)}
+
+                  </View>
+                )}
+
+                <View>
+                  <Input
+                    placeholder='Type reference number'
+                    leftIcon={{ type: 'font-awesome', name: 'address-book' }}
+                    inputContainerStyle={{ marginBottom: -24, marginTop: -10, borderBottomColor: '#ddd' }}
+                    inputStyle={{ fontSize: 15 }}
+                    leftIconContainerStyle={{ marginRight: 10 }}
+                    value={refNumber}
+                    onChangeText = {text=>setrefNumber(text)}
+
+
+                  />
+                </View>
+                <View>
+                  <Input
+                    placeholder='Type phone numner'
+                    leftIcon={{ type: 'font-awesome', name: 'phone' }}
+                    inputContainerStyle={{ borderBottomColor: '#ddd' }}
+                    leftIconContainerStyle={{ marginRight: 10 }}
+                    inputStyle={{ fontSize: 15 }}
+                    keyboardType='phone-pad'
+                    value={phoneNumber}
+                    onChangeText = {textPhone=>setphoneNumber(textPhone)}
+                  />
+                </View>
+                <Button
+                  icon={
+                    <Icon
+                      name="search"
+                      size={15}
+                      color="white"
+                      type='font-awesome'
+                      style={{ marginRight: 8 }}
+
+                    />
+                  }
+                  title="Search"
+                  buttonStyle={{ alignSelf: 'center', width: 150 }}
+                />
               </View>
               {data.map((booking, i) => (
                 <TouchableOpacity onPress={() => {
@@ -162,59 +289,127 @@ export default function bookings({ navigation }) {
                 </TouchableOpacity>
 
               )
-            
+
+              )}
+
+              <Overlay overlayStyle={styles.overLayStyles} isVisible={visible} onBackdropPress={toggleOverlay}>
+
+                <View style={styles.bookingSingleRow}>
+                  <Text style={styles.bookingTitle}>Patient</Text>
+                  <Text>:</Text>
+                  <Text style={styles.bookingDetails}>{bookingDetails.pName}</Text>
+                </View>
+                <View style={styles.bookingSingleRow}>
+                  <Text style={styles.bookingTitle}>Date</Text>
+                  <Text>:</Text>
+                  <Text style={styles.bookingDetails}>2021/06/10</Text>
+                </View>
+                <View style={styles.bookingSingleRow}>
+                  <Text style={styles.bookingTitle}>Session</Text>
+                  <Text>:</Text>
+                  <Text style={styles.bookingDetails}>
+                    Session 1 - (8.00am - 12.00pm)
+                  </Text>
+                </View>
+                <View style={styles.bookingSingleRow}>
+                  <Text style={styles.bookingTitle}>Booking #</Text>
+                  <Text>:</Text>
+                  <Text style={[styles.bookingDetails, styles.bookingNumber]}>
+                    Test
+                  </Text>
+                  <Text style={styles.bookinTime}>8.40 am</Text>
+                </View>
+                <ListItem
+                  topDivider
+
+                  containerStyle={{ backgroundColor: "transparent", marginTop: 10 }}
+
+                >
+                  {/* <Avatar rounded source={{ uri: l.avatar_url }} /> */}
+                  <ListItem.Content>
+                    <ListItem.Title>Dr. Abc</ListItem.Title>
+                    <ListItem.Subtitle>Car</ListItem.Subtitle>
+                  </ListItem.Content>
+                </ListItem>
+                <Button
+                  title="Done"
+                  icon={{ name: 'check', color: 'white' }}
+                  buttonStyle={{ backgroundColor: '#1896c5', width: '40%', alignSelf: 'flex-end', marginTop: 15 }}
+                />
+              </Overlay>
+
+
+            </View>
+          </ScrollView>
+
+        </SafeAreaView>
+        <FAB title="Advance Search"
+          placement='right'
+          color="lightcoral"
+          onPress={() => navigation.navigate('advanceSearch')}
+        />
+
+        {/* Doctors Overlay */}
+        <Overlay overlayStyle={styles.overLayStyles} isVisible={docListVisible} onBackdropPress={toggleOverlayDoc}>
+          <Text style={styles.heading}>Doctors in this dispensary</Text>
+          {
+            isLoadingDoctors ? (
+              <View style={{ alignItems: 'center', justifyContent: 'center' }}><Image
+                style={styles.tinyLogo}
+                source={require('../../../assets/loading_gif.gif')}
+              /></View>
+
+            ) : (
+              <View style={{ flex: 1 }}>
+                <ScrollView>
+                  {
+                    doctorList.map((doctors, i) => (
+                      <ListItem key={'doctor' + i}
+                        bottomDivider={i === (doctorList.length) - 1 ? false : true}
+                        onPress={
+                          () => {
+                            setselectedDoctor(
+                              {
+                                docName: doctors.doctor.name,
+                                docID: doctors.doctor.doctorId,
+                              }
+                            )
+                            setdocListVisible(!docListVisible)
+                          }
+                        }>
+                        {/* <Avatar source={{ uri: l.avatar_url }} /> */}
+                        <ListItem.Content>
+                          <ListItem.Title>{doctors.doctor.name}</ListItem.Title>
+                          <ListItem.Subtitle>{doctors.doctor.speciality}</ListItem.Subtitle>
+                        </ListItem.Content>
+                      </ListItem>
+                    ))
+                  }
+                </ScrollView>
+              </View>
+            )
+          }
+        </Overlay>
+
+        {/* Sessions Overlay */}
+        <Overlay overlayStyle={styles.overLayStyles} isVisible={sessionListVisible} onBackdropPress={toggleOverlaySes}>
+          {isLoadingSessions ? (<Text>Loading</Text>) : (
+
+
+            sessionList.map((session, i) => (
+              <ListItem key={"session" + i} bottomDivider>
+                <ListItem.Content>
+                  <ListItem.Title>{session.id}</ListItem.Title>
+                  <ListItem.Subtitle>{session.sessionStartTime}</ListItem.Subtitle>
+                </ListItem.Content>
+              </ListItem>
+            ))
+
+
           )}
+        </Overlay>
 
-          <Overlay overlayStyle={styles.overLayStyles} isVisible={visible} onBackdropPress={toggleOverlay}>
-
-            <View style={styles.bookingSingleRow}>
-              <Text style={styles.bookingTitle}>Patient</Text>
-              <Text>:</Text>
-              <Text style={styles.bookingDetails}>{bookingDetails.pName}</Text>
-            </View>
-            <View style={styles.bookingSingleRow}>
-              <Text style={styles.bookingTitle}>Date</Text>
-              <Text>:</Text>
-              <Text style={styles.bookingDetails}>2021/06/10</Text>
-            </View>
-            <View style={styles.bookingSingleRow}>
-              <Text style={styles.bookingTitle}>Session</Text>
-              <Text>:</Text>
-              <Text style={styles.bookingDetails}>
-                Session 1 - (8.00am - 12.00pm)
-              </Text>
-            </View>
-            <View style={styles.bookingSingleRow}>
-              <Text style={styles.bookingTitle}>Booking #</Text>
-              <Text>:</Text>
-              <Text style={[styles.bookingDetails, styles.bookingNumber]}>
-                Test
-              </Text>
-              <Text style={styles.bookinTime}>8.40 am</Text>
-            </View>
-            <ListItem
-              topDivider
-
-              containerStyle={{ backgroundColor: "transparent", marginTop: 10 }}
-
-            >
-              {/* <Avatar rounded source={{ uri: l.avatar_url }} /> */}
-              <ListItem.Content>
-                <ListItem.Title>Dr. Abc</ListItem.Title>
-                <ListItem.Subtitle>Car</ListItem.Subtitle>
-              </ListItem.Content>
-            </ListItem>
-            <Button
-              title="Done"
-              icon={{ name: 'check', color: 'white' }}
-              buttonStyle={{ backgroundColor: '#1896c5', width: '40%', alignSelf: 'flex-end', marginTop: 15 }}
-            />
-          </Overlay>
-
-
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+      </View>
     )
   );
 }
@@ -222,9 +417,12 @@ export default function bookings({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#fff'
 
   },
-
+  searchForm: {
+    padding: 20,
+  },
   bookingView: {
     padding: 20,
     margin: 20,
@@ -284,13 +482,37 @@ const styles = StyleSheet.create({
   radioButtonArea: {
     display: 'flex',
     flexDirection: 'row',
-    justifyContent:'space-between',
-    marginBottom:5
+    justifyContent: 'space-between',
+    marginBottom: 5
   },
-  searchBoxRef:{
-    marginBottom:4
+  searchBoxRef: {
+    marginBottom: 4
   },
-  searchBoxbooking:{
-    marginBottom:4
+  searchBoxbooking: {
+    marginBottom: 4
+  },
+  reportOverlay: {
+    width: windowWidth - 10,
+    height: windowHeight - 130
+  },
+  singleSearchRow: {
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    marginBottom: 10,
+    borderBottomColor: '#ddd',
+    borderBottomWidth: 1,
+    paddingBottom: 14,
+    marginHorizontal: 10
+  },
+  searchDetail: {
+    color: '#89898a',
+    fontSize: 15
+  },
+  heading: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#676767'
   }
+
 });
