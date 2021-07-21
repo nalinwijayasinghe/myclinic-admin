@@ -36,6 +36,12 @@ export default function bookings({ navigation }) {
       docName: "Select a doctor",
       docID: '',
     }
+  );
+  const [selectedSession, setselectedSession] = useState(
+    {
+      sessionName: "Select a session",
+      sessionID: '',
+    }
   )
 
   const checkStatus = () => {
@@ -213,7 +219,7 @@ export default function bookings({ navigation }) {
                   <TouchableOpacity onPress={toggleOverlaySes}>
                     <View style={styles.singleSearchRow}>
                       <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
-                      <Text style={styles.searchDetail}>Select a session</Text>
+                      <Text style={styles.searchDetail}>{selectedSession.sessionName}</Text>
                     </View>
                   </TouchableOpacity>) : (
 
@@ -232,7 +238,7 @@ export default function bookings({ navigation }) {
                     inputStyle={{ fontSize: 15 }}
                     leftIconContainerStyle={{ marginRight: 10 }}
                     value={refNumber}
-                    onChangeText = {text=>setrefNumber(text)}
+                    onChangeText={text => setrefNumber(text)}
 
 
                   />
@@ -246,7 +252,7 @@ export default function bookings({ navigation }) {
                     inputStyle={{ fontSize: 15 }}
                     keyboardType='phone-pad'
                     value={phoneNumber}
-                    onChangeText = {textPhone=>setphoneNumber(textPhone)}
+                    onChangeText={textPhone => setphoneNumber(textPhone)}
                   />
                 </View>
                 <Button
@@ -397,7 +403,16 @@ export default function bookings({ navigation }) {
 
 
             sessionList.map((session, i) => (
-              <ListItem key={"session" + i} bottomDivider>
+              <ListItem key={"session" + i}
+                bottomDivider={i === sessionList.length - 1 ? false : true}
+                onPress={() => {
+                  setselectedSession({
+                    sessionName: session.day,
+                    sessionID: session.id,
+                  });
+                  setsessionList(!sessionList);
+                }}
+              >
                 <ListItem.Content>
                   <ListItem.Title>{session.id}</ListItem.Title>
                   <ListItem.Subtitle>{session.sessionStartTime}</ListItem.Subtitle>
