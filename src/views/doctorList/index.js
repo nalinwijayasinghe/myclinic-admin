@@ -3,7 +3,7 @@ import "react-native-gesture-handler";
 import { StyleSheet, Text, View, SafeAreaView, ScrollView, Image } from "react-native";
 import { ListItem, Avatar } from "react-native-elements";
 import { LoadingImage } from '../../../assets/loading_gif.gif';
-
+import { storeData, retrieveData } from '../../utility/cacheLoader';
 
 
 
@@ -13,7 +13,16 @@ export default function doctorList({ navigation }) {
   /* Get data from the API*/
 
   useEffect(() => {
-    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/doctor")
+    let selectedModel = {
+
+      dispensary: {
+        dispensaryId: 5,
+        dispensaryName: "dispensary.name",
+        address: "dispensary.address",
+      }
+    };
+    storeData("dis_cache", selectedModel);
+    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/doctor-dispensary?dispensaryId=5&status=ACTIVE")
       .then((response) => response.json())
       .then((json) => setdoctorData(json))
       .catch((error) => console.error(error))
@@ -29,7 +38,8 @@ export default function doctorList({ navigation }) {
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         <Image
           source={require('../../../assets/loading_gif.gif')}
-        /></View>
+        />
+      </View>
 
     ) : (
       <SafeAreaView>
@@ -41,19 +51,23 @@ export default function doctorList({ navigation }) {
                   key={i}
                   bottomDivider
                   onPress={() => navigation.navigate("doctorDetails", {
-                    doctorName: l.name,
-                    doctorSubjet: l.speciality,
-                    doctorImage: l.image
+                    doctor: {
+                      doctorName: l.doctor.name,
+                      doctorSubjet: l.doctor.speciality,
+                      doctorImage: l.doctor.image,
+                      doctorID: l.doctor.doctorId
+                    }
+
                   })}
                 >
-                  {l.image === null ? <View style={styles.defaultAvatarContainer}><Text style={styles.defaultAvatar}>{l.name.charAt(0)}</Text></View> : <Avatar rounded source={{
+                  {l.doctor.image === null ? <View style={styles.defaultAvatarContainer}><Text style={styles.defaultAvatar}>{l.doctor.name.charAt(0)}</Text></View> : <Avatar rounded source={{
                     uri:
-                      `https://agile-reef-01445.herokuapp.com/health-service/images/${l.image}`,
+                      `https://agile-reef-01445.herokuapp.com/health-service/images/${l.doctor.image}`,
                   }} />}
 
                   <ListItem.Content>
-                    <ListItem.Title>{l.name}</ListItem.Title>
-                    <ListItem.Subtitle>{l.speciality}</ListItem.Subtitle>
+                    <ListItem.Title>{l.doctor.name}</ListItem.Title>
+                    <ListItem.Subtitle>{l.doctor.speciality}</ListItem.Subtitle>
                   </ListItem.Content>
                   <ListItem.Chevron color="black" />
                 </ListItem>

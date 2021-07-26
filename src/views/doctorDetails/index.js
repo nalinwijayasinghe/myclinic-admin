@@ -23,6 +23,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { FilterByDate } from "../../components/filterByDate";
 import FilterByDay from "../../components/filterByDay";
+import { storeData, retrieveData } from '../../utility/cacheLoader';
 
 const scheduelDetails = [
   {
@@ -53,6 +54,9 @@ const sessionDetails = [
 ];
 const windowWidth = Dimensions.get("window").width;
 export default function doctorDetails({ route, navigation }) {
+  let listRef;
+  const doctor = route.params.doctor;
+  
   const { doctorName, doctorSubjet, doctorImage } = route.params;
   const [isLoading, setisLoading] = useState(true);
   const [sexpanded, setSexpanded] = useState(false);
@@ -73,7 +77,11 @@ export default function doctorDetails({ route, navigation }) {
   /* Get data from the API*/
 
   useEffect(() => {
-    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/schedule/5")
+
+    retrieveData(["dis_cache"]).then((data) => {
+      alert('helooooo')
+      alert(JSON.stringify(data))
+      fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${doctor.doctorID}/dispensary/${data.dispensary.dispensaryId}`)
       .then((response) => response.json())
       .then((json) => {
         let map = new Map();
@@ -130,6 +138,9 @@ export default function doctorDetails({ route, navigation }) {
       toValue: 1,
       duration: 2000
     }).start();
+    })
+
+    
 
   }, []);
 
@@ -213,6 +224,12 @@ export default function doctorDetails({ route, navigation }) {
     setVisible(!visible);
   };
 
+  const scrollFunction = () => {
+    listRef.scrollTo({ x: 0, y: 250, animated: true })
+   // alert('hiiiii')
+
+  }
+
   const toggleSwitch = (switchID) => {
     // // setDocAbsent((docAbsent) => !docAbsent)
     // if (activeSessions.indexOf(switchID) !== -1) {
@@ -230,7 +247,7 @@ export default function doctorDetails({ route, navigation }) {
 
     if (activeSessions.indexOf(switchID) == -1) {
       setactiveSession(activeSessions.push(switchID));
-      
+
     }
     else { setactiveSession(activeSessions.filter(item => item !== switchID)); }
 
@@ -241,19 +258,19 @@ export default function doctorDetails({ route, navigation }) {
     <>
       <View style={styles.container}>
         <ListItem bottomDivider>
-          {doctorImage === null ? <View style={styles.defaultAvatarContainer}><Text style={styles.defaultAvatar}>{doctorName.charAt(0)}</Text></View> : <Avatar
+          {doctor.doctorImage === null ? <View style={styles.defaultAvatarContainer}><Text style={styles.defaultAvatar}>{doctor.doctorName.charAt(0)}</Text></View> : <Avatar
             rounded
             size="large"
             source={{
-              uri: `https://agile-reef-01445.herokuapp.com/health-service/images/${doctorImage}`,
+              uri: `https://agile-reef-01445.herokuapp.com/health-service/images/${doctor.doctorImage}`,
             }}
           />}
 
           <ListItem.Content>
             <ListItem.Title style={{ fontWeight: "bold" }}>
-              {doctorName}
+              {doctor.doctorName}
             </ListItem.Title>
-            <ListItem.Subtitle>{doctorSubjet}</ListItem.Subtitle>
+            <ListItem.Subtitle>{doctor.doctorSubjet}</ListItem.Subtitle>
           </ListItem.Content>
         </ListItem>
         <View style={styles.scheduelHeader}>
@@ -261,7 +278,9 @@ export default function doctorDetails({ route, navigation }) {
           <Icon name="tune" raised color="#f50" onPress={toggleOverlay} />
         </View>
 
-        <ScrollView style={styles.scrollView}>
+        <ScrollView ref={(ref) => {
+          listRef = ref;
+        }} style={styles.scrollView}>
           {isLoading ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
               <Image
@@ -295,6 +314,7 @@ export default function doctorDetails({ route, navigation }) {
                   onPress={() => {
                     //setSexpanded(!sexpanded);
                     updateExpandedList(l, i);
+                    scrollFunction()
                   }}
                 >
                   {sessionDetails.map((sd, j) => (

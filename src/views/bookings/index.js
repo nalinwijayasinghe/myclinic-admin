@@ -16,7 +16,7 @@ export default function bookings({ navigation }) {
     time: "",
     doctor: "",
   })
-  const [isLoading, setLoading] = useState(true);
+  // const [isLoading, setLoading] = useState(true);
   const [isLoadingDoctors, setLoadingDoctors] = useState(true);
   const [isLoadingSessions, setLoadingSessions] = useState(true);
 
@@ -31,6 +31,8 @@ export default function bookings({ navigation }) {
   const [sessionList, setsessionList] = useState([]);
   const [refNumber, setrefNumber] = useState('');
   const [phoneNumber, setphoneNumber] = useState();
+  const [isBookingDetails, setisBookingDetails] = useState(true);
+  const [bookingSearchResults, setbookingSearchResults] = useState([]);
   const [selectedDoctor, setselectedDoctor] = useState(
     {
       docName: "Select a doctor",
@@ -41,9 +43,13 @@ export default function bookings({ navigation }) {
     {
       sessionName: "Select a session",
       sessionID: '',
+      sessionStart: 'Select a session',
+      sessionEnd: '',
     }
   )
-
+  const [searchedBookingResutls, setsearchedBookingResutls] = useState([]);
+  const [isSearchedBookings, setisSearchedBookings] = useState(false);
+  const [warningMessage, setwarningMessage] = useState(false);
   const checkStatus = () => {
     setChecked(!checked)
   }
@@ -64,23 +70,26 @@ export default function bookings({ navigation }) {
       .then((json) => {
         setdoctorList(json)
         if (json.length === 1) {
+          setselectedDoctor({
+            docName: json[0].doctor.name,
+          })
           fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${json[0].doctor.doctorId}/dispensary/5?displayDays=1`)
             .then((response) => response.json())
-            .then((json) => setsessionList(json))
+            .then((json) => {
+              setsessionList(json)
+              if (json.length === 1) {
+                setselectedSession({
+                  sessionID: json[0].id,
+                  sessionStart:json[0].essionStartTime
+                })
+              }
+            })
             .catch((error) => console.error(error))
             .finally(() => setLoadingSessions(false));
           console.log("+++++++++++++++++Sessionsssssssss++++++++++++++++++++++++");
           console.log(sessionList);
         }
-        else {
-          fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${selectedDoctor.docID}/dispensary/5?displayDays=1`)
-            .then((response) => response.json())
-            .then((json) => setsessionList(json))
-            .catch((error) => console.error(error))
-            .finally(() => setLoadingSessions(false));
-          console.log("+++++++++++++++++Sessionsssssssss++++++++++++++++++++++++");
-          console.log(sessionList);
-        }
+
       })
       .catch((error) => console.error(error))
       .finally(() => setLoadingDoctors(false));
@@ -98,7 +107,35 @@ export default function bookings({ navigation }) {
     setsessionListVisible(!sessionListVisible);
   };
 
+  /* load sessions for multipe doctors*/
 
+  const getSessionsMutipleDocs = (doctorID) => {
+    fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${doctorID}/dispensary/5?displayDays=1`)
+      .then((response) => response.json())
+      .then((json) => {
+        setsessionList(json)
+        if (json.length === 1) {
+          setselectedSession({
+            sessionID: json[0].id,
+            sessionStart:json[0].sessionStartTime
+          })
+        }
+        if (json.length === 0) {
+          setselectedSession({
+            sessionStart: "No sessions for this doctor",
+          })
+        }
+      })
+      .catch((error) => console.error(error))
+      .finally(() => {
+        setLoadingSessions(false);
+
+      });
+    console.log("+++++++++++++++++Sessionsssssssss++++++++++++++++++++++++");
+    console.log('chdeckkkkkkk' + typeof (sessionList === undefined));
+  }
+
+  /* load sessions for multiple doctors end */
 
   /*Alert*/
 
@@ -119,22 +156,43 @@ export default function bookings({ navigation }) {
 
   /*Alert End*/
 
-  /* Get data from the API*/
 
-  useEffect(() => {
-    fetch("https://mocki.io/v1/d4867d8b-b5d5-4a48-a4ab-79131b5809b8")
+
+
+  /* Create Search function */
+
+  const searchHandler = () => {
+    setisSearchedBookings(true);
+    const requestOptions = {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(
+        {
+
+          doctorScheduleGridId: selectedSession.sessionID
+        }
+      ),
+    };
+    
+    fetch("https://agile-reef-01445.herokuapp.com/health-service/api/bookings", requestOptions)
       .then((response) => response.json())
-      .then((json) => setData(json))
+      .then((data) => {
+        setsearchedBookingResutls(data);
+        console.log('booking details==============================' + JSON.stringify(data))
+      })
       .catch((error) => console.error(error))
-      .finally(() => setLoading(false));
-    console.log("+++++++++++++++++++++++++++++++++++++++++");
-    console.log(data);
-  }, []);
+      .finally(() => {
+        setisSearchedBookings(false);
+        setwarningMessage(true)
+      });
 
-  /* End - Get data from the API*/
+  }
+
+
+  /* End Create search function */
 
   return (
-    isLoading ? (
+    isLoadingDoctors ? (
       <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Image
         style={styles.tinyLogo}
         source={require('../../../assets/loading_gif.gif')}
@@ -211,50 +269,29 @@ export default function bookings({ navigation }) {
                   ) : (
                     <View style={styles.singleSearchRow}>
                       <Icon name='user-md' type='font-awesome' style={{ marginRight: 20 }} />
-                      <Text style={styles.searchDetail}>{doctorList[0].doctor.name}</Text>
+                      <Text style={styles.searchDetail}>{selectedDoctor.docName}</Text>
                     </View>)
                 )}
+                {isLoadingSessions ? null : (
 
-                {sessionList.length > 1 ? (
-                  <TouchableOpacity onPress={toggleOverlaySes}>
+                  sessionList.length > 1 ? (
+                    <TouchableOpacity onPress={toggleOverlaySes}>
+                      <View style={styles.singleSearchRow}>
+                        <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
+                        <Text style={styles.searchDetail}>{selectedSession.sessionStart}</Text>
+                      </View>
+                    </TouchableOpacity>
+                  ) : (
+
                     <View style={styles.singleSearchRow}>
                       <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
-                      <Text style={styles.searchDetail}>{selectedSession.sessionName}</Text>
+                      {sessionList.length == 0 ? (<Text style={styles.searchDetail}>{selectedSession.sessionStart}</Text>) : (<Text style={styles.searchDetail}>{sessionList[0].sessionStartTime}</Text>)}
+
                     </View>
-                  </TouchableOpacity>) : (
-
-                  <View style={styles.singleSearchRow}>
-                    <Icon name='clock-o' type='font-awesome' style={{ marginRight: 20 }} />
-                    {isLoadingSessions ? (<Text style={styles.searchDetail}>Loading...</Text>) : (<Text style={styles.searchDetail}>{sessionList[0].id}</Text>)}
-
-                  </View>
+                  )
                 )}
 
-                <View>
-                  <Input
-                    placeholder='Type reference number'
-                    leftIcon={{ type: 'font-awesome', name: 'address-book' }}
-                    inputContainerStyle={{ marginBottom: -24, marginTop: -10, borderBottomColor: '#ddd' }}
-                    inputStyle={{ fontSize: 15 }}
-                    leftIconContainerStyle={{ marginRight: 10 }}
-                    value={refNumber}
-                    onChangeText={text => setrefNumber(text)}
 
-
-                  />
-                </View>
-                <View>
-                  <Input
-                    placeholder='Type phone numner'
-                    leftIcon={{ type: 'font-awesome', name: 'phone' }}
-                    inputContainerStyle={{ borderBottomColor: '#ddd' }}
-                    leftIconContainerStyle={{ marginRight: 10 }}
-                    inputStyle={{ fontSize: 15 }}
-                    keyboardType='phone-pad'
-                    value={phoneNumber}
-                    onChangeText={textPhone => setphoneNumber(textPhone)}
-                  />
-                </View>
                 <Button
                   icon={
                     <Icon
@@ -267,36 +304,60 @@ export default function bookings({ navigation }) {
                     />
                   }
                   title="Search"
-                  buttonStyle={{ alignSelf: 'center', width: 150 }}
+                  disabled={selectedDoctor.docName === "Select a doctor" || selectedSession.sessionStart === "Select a session" || selectedSession.sessionStart === "No sessions for this doctor"}
+                  buttonStyle={{ alignSelf: 'flex-end', width: 150, marginTop: 10, marginRight: 10 }}
+                  onPress={searchHandler}
                 />
               </View>
-              {data.map((booking, i) => (
-                <TouchableOpacity onPress={() => {
-                  setVisible(!visible);
-                  setbookingDetails({
-                    pName: booking.name,
-                    bNumber: "",
-                    time: "",
-                    doctor: "",
-                  })
-                }}
-                  onLongPress={createTwoButtonAlert}
-                  activeOpacity={0.2}
-                  underlayColor="#1896c5"
-                >
-                  <ListItem key={i} bottomDivider>
-                    <Icon name='chevron-right' />
-                    <ListItem.Content>
-                      <ListItem.Title>{booking.name}</ListItem.Title>
-                      <ListItem.Subtitle><Text style={{ color: '#1896c5' }}>Ref # - {booking.city}</Text> / <Text style={{ color: 'green' }}>Booking # - 10</Text></ListItem.Subtitle>
-                    </ListItem.Content>
-                    <ListItem.Chevron />
-                  </ListItem>
-                </TouchableOpacity>
 
-              )
+              {isSearchedBookings ? (
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><Image
+                  style={styles.tinyLogo}
+                  source={require('../../../assets/loading_gif.gif')}
+                /></View>
 
-              )}
+              ) : (
+                searchedBookingResutls.length === 0 && warningMessage ? (
+                  <View style={styles.warningArea}>
+                    <Text style={{ color: '#a80303', textAlign: 'center' }}>There is no data for selected fields. Please try again.</Text>
+                  </View>
+                ) : (
+
+                  <>
+                    {warningMessage ? <Text style={styles.subHeading}>Searched results</Text> : null}
+                    {searchedBookingResutls.map((booking, i) => (
+                      <TouchableOpacity onPress={() => {
+                        setVisible(!visible);
+                        setbookingDetails({
+                          pName: booking.patient,
+                          bNumber: "",
+                          time: "",
+                          doctor: "",
+                        })
+                      }}
+                        onLongPress={createTwoButtonAlert}
+                        activeOpacity={0.2}
+                        underlayColor="#1896c5"
+                      >
+                        <ListItem key={i}
+                          bottomDivider={searchedBookingResutls.length - 1 ? true : false}
+                        >
+                          <Icon name='chevron-right' />
+                          <ListItem.Content>
+                            <ListItem.Title>{booking.patient}</ListItem.Title>
+                            <ListItem.Subtitle><Text style={{ color: '#1896c5' }}>Ref # - {booking.patientAppointmentNumber}</Text> / <Text style={{ color: 'green' }}>Booking # - 10</Text></ListItem.Subtitle>
+                          </ListItem.Content>
+                          <ListItem.Chevron />
+                        </ListItem>
+                      </TouchableOpacity>
+
+                    )
+                    )}
+                  </>
+                ))}
+
+
+
 
               <Overlay overlayStyle={styles.overLayStyles} isVisible={visible} onBackdropPress={toggleOverlay}>
 
@@ -366,7 +427,7 @@ export default function bookings({ navigation }) {
               /></View>
 
             ) : (
-              <View style={{ flex: 1 }}>
+              <View style={{ height: (doctorList.length) * 80, maxHeight: windowHeight - 100 }}>
                 <ScrollView>
                   {
                     doctorList.map((doctors, i) => (
@@ -380,7 +441,9 @@ export default function bookings({ navigation }) {
                                 docID: doctors.doctor.doctorId,
                               }
                             )
+                            getSessionsMutipleDocs(doctors.doctor.doctorId);
                             setdocListVisible(!docListVisible)
+
                           }
                         }>
                         {/* <Avatar source={{ uri: l.avatar_url }} /> */}
@@ -399,6 +462,7 @@ export default function bookings({ navigation }) {
 
         {/* Sessions Overlay */}
         <Overlay overlayStyle={styles.overLayStyles} isVisible={sessionListVisible} onBackdropPress={toggleOverlaySes}>
+          <Text style={styles.heading}>Sessions - Dr. {selectedDoctor.docName}</Text>
           {isLoadingSessions ? (<Text>Loading</Text>) : (
 
 
@@ -409,13 +473,15 @@ export default function bookings({ navigation }) {
                   setselectedSession({
                     sessionName: session.day,
                     sessionID: session.id,
+                    sessionStart: session.sessionStartTime,
+                    sessionEnd: session.sessionEndTime,
                   });
-                  setsessionList(!sessionList);
+                  setsessionListVisible(!sessionListVisible);
                 }}
               >
                 <ListItem.Content>
-                  <ListItem.Title>{session.id}</ListItem.Title>
-                  <ListItem.Subtitle>{session.sessionStartTime}</ListItem.Subtitle>
+                  <ListItem.Title>{session.sessionStartTime} to {session.sessionEndTime}</ListItem.Title>
+                  <ListItem.Subtitle>{session.day}</ListItem.Subtitle>
                 </ListItem.Content>
               </ListItem>
             ))
@@ -436,7 +502,8 @@ const styles = StyleSheet.create({
 
   },
   searchForm: {
-    padding: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 10
   },
   bookingView: {
     padding: 20,
@@ -492,7 +559,9 @@ const styles = StyleSheet.create({
     elevation: 5
   },
   overLayStyles: {
-    minWidth: windowWidth - 50
+    minWidth: windowWidth - 50,
+    maxHeight: windowHeight - 100,
+    height: 'auto'
   },
   radioButtonArea: {
     display: 'flex',
@@ -527,7 +596,28 @@ const styles = StyleSheet.create({
   heading: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#676767'
+    color: '#fff',
+    backgroundColor: "#1896c5",
+    padding: 10,
+    borderRadius: 4
+  },
+  warningArea: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fde1e1',
+    borderColor: '#fed4d4',
+    borderWidth: 2,
+    borderRadius: 4,
+    padding: 20,
+    margin: 20
+  },
+  subHeading: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginVertical: 10,
+    marginHorizontal: 20,
+    color: '#656565'
   }
 
 });

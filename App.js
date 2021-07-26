@@ -9,6 +9,7 @@ import Bookings from "./src/views/bookings";
 import DoctorDetails from "./src/views/doctorDetails";
 import AdvanceSearch from './src/views/advaceSearch';
 import MaterialCommunityIcons from "react-native-vector-icons/MaterialCommunityIcons";
+import { storeData, retrieveData } from './src/utility/cacheLoader';
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
