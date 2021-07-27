@@ -293,19 +293,19 @@ export default function bookings({ navigation }) {
 
 
                 <Button
-                  icon={
-                    <Icon
-                      name="search"
-                      size={15}
-                      color="white"
-                      type='font-awesome'
-                      style={{ marginRight: 8 }}
+                  // icon={
+                  //   <Icon
+                  //     name="search"
+                  //     size={15}
+                  //     color="white"
+                  //     type='font-awesome'
+                  //     style={{ marginRight: 8 }}
 
-                    />
-                  }
+                  //   />
+                  // }
                   title="Search"
                   disabled={selectedDoctor.docName === "Select a doctor" || selectedSession.sessionStart === "Select a session" || selectedSession.sessionStart === "No sessions for this doctor"}
-                  buttonStyle={{ alignSelf: 'flex-end', width: 150, marginTop: 10, marginRight: 10 }}
+                  buttonStyle={{ alignSelf: 'flex-end', width: 100, marginTop: 10, marginRight: 10 }}
                   onPress={searchHandler}
                 />
               </View>

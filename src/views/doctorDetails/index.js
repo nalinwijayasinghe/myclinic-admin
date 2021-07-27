@@ -23,7 +23,7 @@ import {
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { FilterByDate } from "../../components/filterByDate";
 import FilterByDay from "../../components/filterByDay";
-import { storeData, retrieveData } from '../../utility/cacheLoader';
+import { storeData, retrieveSingleItem } from '../../utility/cacheLoader';
 
 const scheduelDetails = [
   {
@@ -78,10 +78,10 @@ export default function doctorDetails({ route, navigation }) {
 
   useEffect(() => {
 
-    retrieveData(["dis_cache"]).then((data) => {
+    retrieveSingleItem("dis_cache").then((data) => {
       alert('helooooo')
-      alert(JSON.stringify(data))
-      fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${doctor.doctorID}/dispensary/${data.dispensary.dispensaryId}`)
+      console.log('DP IDDDDDDDDDDDDDDDDDDDDDDD'+JSON.parse(data).dispensary.dispensaryId)
+      fetch(`https://agile-reef-01445.herokuapp.com/health-service/api/schedule/doctor/${doctor.doctorID}/dispensary/${JSON.parse(data).dispensary.dispensaryId}`)
       .then((response) => response.json())
       .then((json) => {
         let map = new Map();
@@ -127,6 +127,7 @@ export default function doctorDetails({ route, navigation }) {
           console.log(key + " = " + JSON.stringify(value));
         })
         setDays(tempKeys);
+        console.log(tempKeys+'dayssssssssssssssssssssss')
         setselectedSession(map);
         setactiveSession(tempActiveSessions);
 
